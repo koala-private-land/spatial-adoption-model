@@ -25,11 +25,11 @@ rd_WTA_data <-read.csv("./data/ppData2.csv")
   #A <- 262
   #W <- 224   # number of respondents who are Willing to Participate
 
-# fill missing values - THIS IS A VERY NAIVE DATA IMPUTATION METHOD - NEED TO LOOK AT THIS (24/7/20)
+# fill missing values - THIS IS A VERY NAIVE DATA IMPUTATION METHOD - NOTE WE DON'T IMPUTE THE REPSONSE VARIABLE - THESE STAY AS NA - NEED TO LOOK AT THIS (24/7/20)
 rd_WTA_data <- rd_WTA_data %>%
                mutate(ha = ifelse(is.na(ha), mean(ha, na.rm = T), ha),
-                      Q8.4_Inf_WTA = ifelse(is.na(Q8.4_Inf_WTA), "I would not participate", Q8.4_Inf_WTA),
-                      Q8.6_10yr_WTA = ifelse(is.na(Q8.6_10yr_WTA), "I would not participate", Q8.6_10yr_WTA),
+                      Q8.4_Inf_WTA = as.character(Q8.4_Inf_WTA),
+                      Q8.6_10yr_WTA = as.character(Q8.6_10yr_WTA),
                       Age = ifelse(is.na(Age), mean(Age, na.rm = T), Age),
                       Residence = ifelse(is.na(Residence), mean(Residence, na.rm = T), Residence),
                       Retired = ifelse(is.na(Retired), "0", Retired),
@@ -40,27 +40,53 @@ rd_WTA_data <- rd_WTA_data %>%
                       RelianceFarmingGT25perc = ifelse(is.na(RelianceFarmingGT25perc), "0", RelianceFarmingGT25perc))
 
 # create binary vector of whether the landholder would even consider adopting an agreement
-ACCEPT.df <- rd_WTA_data %>%
-             arrange(desc(ResponseId)) %>%
+ACCEPT.Inf.df <- rd_WTA_data %>%
+             arrange(desc(ResponseId)) %>% mutate (Q8.4_Inf_WTA = trimws(Q8.4_Inf_WTA)) %>%
              mutate(ACCEPT = recode(Q8.4_Inf_WTA,
-                                   "$50 "="1",
-                                   "$100 "="1",
-                                   "$1,500 "="1",
-                                   "$2,500 "="1",
+                                   "$50"="1",
+                                   "$100"="1",
+                                   "$1,500"="1",
+                                   "$2,500"="1",
                                    ">$2,500"="1",
-                                   "$2,000 "="1",
+                                   "$2,000"="1",
                                    "I would not participate"="0",
                                    "I would pay"="1",
-                                   "$500 "="1",
-                                   "$750 "="1",
-                                   "$25 "="1",
-                                   "$1,000 "="1",
-                                   "$250 "="1",
-                                   "$0 "="1",
-                                   " "="0", .default = "0")) %>%
+                                   "$500"="1",
+                                   "$750"="1",
+                                   "$25"="1",
+                                   "$1,000"="1",
+                                   "$250"="1",
+                                   "$0"="1",
+                                   " "="NA", .default = "NA")) %>%
                    select(ACCEPT)
 
-ACCEPT <- as.numeric(unlist(ACCEPT.df))
+ACCEPT.Inf <- as.numeric(unlist(ACCEPT.Inf.df))
+
+# create binary vector of whether the landholder would even consider adopting an agreement
+ACCEPT.10yr.df <- rd_WTA_data %>%
+             arrange(desc(ResponseId)) %>% mutate (Q8.6_10yr_WTA = trimws(Q8.6_10yr_WTA)) %>%
+             mutate(ACCEPT = recode(Q8.6_10yr_WTA,
+                                   "$50"="1",
+                                   "$100"="1",
+                                   "$1,500"="1",
+                                   "$2,500"="1",
+                                   ">$2,500"="1",
+                                   "$2,000"="1",
+                                   "I would not participate"="0",
+                                   "I would pay"="1",
+                                   "$500"="1",
+                                   "$750"="1",
+                                   "$25"="1",
+                                   "$1,000"="1",
+                                   "$250"="1",
+                                   "$0"="1",
+                                   " "="NA", .default = "NA")) %>%
+                   select(ACCEPT)
+
+ACCEPT.10yr <- as.numeric(unlist(ACCEPT.10yr.df))
+
+
+
 
 HA_A.df  <- rd_WTA_data %>% # HA vector, length = N (262)
     arrange(desc(ResponseId)) %>%
@@ -164,7 +190,7 @@ M.df <- rd_WTA_data %>%  # binary vector of whether you will accept a payment, l
            BlueCollar,Residence,RelianceFarmingGT25perc,HighIncome,HighMortgage, SeenKoala,
            kma_code,Retired)
 
-CENS <- M.df %>%  # vector indicaing whether the value is left or right censored, length = M
+CENS <- M.df %>%  # vector indicating whether the value is left or right censored, length = M
   arrange(desc(ResponseId)) %>%
   mutate(CENS = recode(Q8.4_Inf_WTA,
                          "$50 "="1",
