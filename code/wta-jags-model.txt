@@ -1,0 +1,42 @@
+# this model estimates the probability of considering adoption
+# and then given the potential for adoption the payment they are willing
+# accept for adoption
+# N is the total number of survey participants
+# M is the total number of survey participants who would consider adoption
+# ACCEPT is whether each participant would consider adoption (1 = would consider adoption, 0 = would not consider adoption)
+# CENS is a vector of the censoring for each participant who would consider adoption (0 = < 0, 1 = 0 - 2500, 2 = > 2500)
+# WTA is $ value of the willingness to accept value for participants who would consider adoption
+# with NAs for censored values (i.e., those < 0 and those > 2500) (units = 1000s of $s)
+# LIM is censoring interval (in this case it is 0 to 2,500 dollars)
+# X is a matrix of covariates for considering adoption
+# Nx is the number of covariates for X
+# Y is a matrix of covariates for the willingness to accept value
+# Ny is the number of covariates for Y
+model {
+  # likelihood for the probability of considering adoption
+  # loop through all survey participants
+  for (i in 1:N) {
+    ACCEPT[i] ~ dbern(p[i])
+    logit(p[i]) <- sum(X[i,] * beta_a)
+  }
+
+  # likelihood for willingness to accept values
+  # loop through all survey participants who are willing to consider adoption
+  for (i in 1:M) {
+    CENS[i] ~ dinterval(WTA[i], LIM)
+    WTA[i] ~ dnorm(mu[i], tau)
+    mu[i] <- sum(Y[i,] * beta_wta)
+  }
+
+  # Priors
+  tau <- sig^-2
+  sig ~  dunif(0,10)
+  for (i in 1:Nx)
+  {
+  	beta_a[i] ~ dnorm(0,0.001)
+  }
+  for (i in 1:Ny)
+  {
+  	beta_wta[i] ~ dnorm(0,0.001)
+  }
+}

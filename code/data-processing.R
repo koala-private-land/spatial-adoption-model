@@ -1,31 +1,17 @@
-#####################################################--------------------------#######
-#   WTA MODEL DATA PROCESSING              ----------------#######
-#------------------------------------------------------------------------------#######
-#
-# By: Carla Archibald
-# Created: 16 June 2020
-# Objective:
-#
-# Data & object codes: rd_ = raw data; pd_ = processed data; ud_ = using data; tb_ = table
-#
-###### ----------------------------------------------------------------------- #######
-###### ----------------------------------------------------------------------- #######
-
-# 1. load packages
+# load packages
 library(vctrs)
 library(tidyverse)
 
-# 2. load data
+# load data
 rd_WTA_data <-read.csv("./data/ppData2.csv")
 
-# 3. data preparation
-  #scaling <- function(x){(x-min(x))/(max(x)-min(x))}
+# data preparation
 
-  #LIM <- cbind((rep(0,224)),(rep(2500,224)))
-  #A <- 262
-  #W <- 224   # number of respondents who are Willing to Participate
+#LIM <- cbind((rep(0,224)),(rep(2500,224)))
+#A <- 262
+#W <- 224   # number of respondents who are Willing to Participate
 
-# fill missing values - THIS IS A VERY NAIVE DATA IMPUTATION METHOD - NOTE WE DON'T IMPUTE THE REPSONSE VARIABLE - THESE STAY AS NA - NEED TO LOOK AT THIS (24/7/20)
+# fill missing values - THIS IS A VERY NAIVE DATA IMPUTATION METHOD - ALSO NOTE WE DON'T IMPUTE THE REPSONSE VARIABLE - THESE STAY AS NA - NEED TO LOOK AT THIS TO IMPROVE (24/7/20)
 rd_WTA_data <- rd_WTA_data %>%
                mutate(ha = ifelse(is.na(ha), mean(ha, na.rm = T), ha),
                       Q8.4_Inf_WTA = as.character(Q8.4_Inf_WTA),
@@ -37,7 +23,7 @@ rd_WTA_data <- rd_WTA_data %>%
                       HighMortgage = ifelse(is.na(HighMortgage), "0", HighMortgage),
                       HighIncome = ifelse(is.na(HighIncome), "0",  HighIncome),
                       SeenKoala = ifelse(is.na(SeenKoala), "0", SeenKoala),
-                      RelianceFarmingGT25perc = ifelse(is.na(RelianceFarmingGT25perc), "0", RelianceFarmingGT25perc))
+                      RelianceFarmingGT25perc = ifelse(is.na(RelianceFarmingGT25perc), "0", RelianceFarmingGT25perc)) %>% as_tibble()
 
 # create binary vector of whether the landholder would even consider adopting an agreement
 ACCEPT.Inf.df <- rd_WTA_data %>%
@@ -57,7 +43,7 @@ ACCEPT.Inf.df <- rd_WTA_data %>%
                                    "$1,000"="1",
                                    "$250"="1",
                                    "$0"="1",
-                                   " "="NA", .default = "NA")) %>%
+                                   " "="", .default = "")) %>%
                    select(ACCEPT)
 
 ACCEPT.Inf <- as.numeric(unlist(ACCEPT.Inf.df))
@@ -80,10 +66,13 @@ ACCEPT.10yr.df <- rd_WTA_data %>%
                                    "$1,000"="1",
                                    "$250"="1",
                                    "$0"="1",
-                                   " "="NA", .default = "NA")) %>%
+                                   " "="", .default = "")) %>%
                    select(ACCEPT)
 
 ACCEPT.10yr <- as.numeric(unlist(ACCEPT.10yr.df))
+
+
+
 
 
 
