@@ -17,7 +17,7 @@ model {
   # loop through all survey participants
   for (i in 1:N) {
     ACCEPT[i] ~ dbern(p[i])
-    logit(p[i]) <- sum(X[i,] * beta_a)
+    logit(p[i]) <- sum(X[i,] * beta_x)
   }
 
   # likelihood for willingness to accept values
@@ -25,18 +25,18 @@ model {
   for (i in 1:M) {
     CENS[i] ~ dinterval(WTA[i], LIM)
     WTA[i] ~ dnorm(mu[i], tau)
-    mu[i] <- sum(Y[i,] * beta_wta)
+    mu[i] <- sum(Y[i,] * beta_y)
   }
 
   # Priors
   tau <- sig^-2
-  sig ~  dunif(0,10)
+  sig ~ dunif(0,10)
   for (i in 1:Nx)
   {
-  	beta_a[i] ~ dnorm(0,0.001)
+  	beta_x[i] ~ dnorm(0,0.001)
   }
   for (i in 1:Ny)
   {
-  	beta_wta[i] ~ dnorm(0,0.001)
+  	beta_y[i] ~ dnorm(0,0.001)
   }
 }
