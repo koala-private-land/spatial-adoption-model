@@ -12,7 +12,7 @@ library(modeest)
 rd_WTA_data <-read.csv("./data/ppData2.csv")
 
 # load functions
-source("./code/functions.R")
+source("./code/functions.r")
 
 # data preparation
 
