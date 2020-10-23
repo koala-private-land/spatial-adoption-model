@@ -39,5 +39,5 @@ vignettes/*.pdf
 .Renviron
 
 # We don't want to upload the data or outputs to github
-data/
+input/
 output/
