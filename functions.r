@@ -16,7 +16,7 @@ get.jags <- function(Data)
   #cl <- makeCluster(3) # comment out if not using parallel processing
 
   # edit methods depending on whether using parallel processing or not
-	fit <- run.jags(model="./code/wta-jags-model.txt", monitor = c("beta_x", "beta_y", "sig"), data = Data , n.chains = 3 , inits = list(inits1,inits2,inits3), burnin = 10000, adapt = 1000, sample = 10000, jags = "C:/Program Files/JAGS/JAGS-4.3.0/x64/bin/jags-terminal.exe", ,method = "rjags")  # , method = "rjparallel", cl = cl)
+	fit <- run.jags(model="wta-jags-model.txt", monitor = c("beta_x", "beta_y", "sig"), data = Data , n.chains = 3 , inits = list(inits1,inits2,inits3), burnin = 10000, adapt = 1000, sample = 10000, jags = "C:/Program Files/JAGS/JAGS-4.3.0/x64/bin/jags-terminal.exe", ,method = "rjags")  # , method = "rjparallel", cl = cl)
 
 	#stopCluster(cl) # comment out if not using parallel processing
 
