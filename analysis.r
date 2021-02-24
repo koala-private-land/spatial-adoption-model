@@ -81,7 +81,6 @@ Data_Spatial <- st_set_crs(Data_Spatial, "+proj=longlat +ellps=WGS84 +datum=WGS8
 
 # import spatial predictor data
 Pred_Spatial <- st_read("input/spatial/properties_mosaic_final_wgs84.shp")
-Pred_Spatial_Table <- as_tibble(Pred_Spatial)
 
 # import data on the target properties for making predictions (those that are private land and have koala habitat on them)
 Target_Props_Spatial <- st_read("input/spatial/properties_mosaic_final_private_not_intense_hab_only_WGS84.shp")
@@ -89,9 +88,10 @@ Target_Props_Spatial_Table <- as_tibble(Target_Props_Spatial)
 
 # intersect survey data and spatial predictors
 Data_Int_Spatial <- st_intersection(Data_Spatial, Pred_Spatial)
+Data_int_Spatial_Table <- as_tibble(Data_Int_Spatial)
 
 # remove duplicates based on plan number and lot number
-Data_Final <- Pred_Spatial_Table[!duplicated(Pred_Spatial_Table[,c("PLANLABEL", "LOTNUMBER")]), ]
+Data_Final <- Data_int_Spatial_Table[!duplicated(Data_int_Spatial_Table[,c("PLANLABEL", "LOTNUMBER")]), ]
 # set land values that are 0 to NA
 Data_Final[which(Data_Final[,"LValHa"] == 0), "LValHa"] <- NA
 write.csv(Data_Final, file="output/compiled_survey_data/final_compiled_data.csv", row.names = FALSE)
@@ -411,10 +411,13 @@ saveRDS(Jags.Fits, file = "output/jags/Jags_Fits.rds")
 
 # get spatial predictions from selected models
 
-# probability of adoption
+# MOSAIC TYPE MODEL - MODEL 2
 
 # get coefficients
-Coefs <- summary(Jags.Fits[[2]])[1:7, "Mean"]
+Coefs_Adopt <- summary(Jags.Fits[[2]])[1:7, "Mean"]
+Coefs_WTA <- summary(Jags.Fits[[2]])[8:14, "Mean"]
+# write to file
+write.csv(summary(Jags.Fits[[2]]), file="output/coefficients/cofficients_model2.csv")
 
 # get property data for predictions
 Predictions_Data <- Target_Props_Spatial_Table %>% dplyr::select(CADID, ha, LValHa, MosType)
@@ -422,11 +425,19 @@ Predictions_Data$MosType <- fct_other(Predictions_Data$MosType, keep = c("E16", 
 Predictions_Data <- Predictions_Data %>% mutate(ha = as.vector(scale(ha, center = attr(AREA.Inf.X,"scaled:center"), scale = attr(AREA.Inf.X,"scaled:scale"))),
                                             LValHa = as.vector(scale(ha, center = attr(LVAL.Inf.X,"scaled:center"), scale = attr(LVAL.Inf.X,"scaled:scale"))))
 
-# generate predictions
+# generate predictions for probability to consider adoption
 Model_Matrix <- model.matrix(~ ha + LValHa + MosType, data = Predictions_Data)
-Predictions <- Model_Matrix %*% Coefs
-Predictions <- exp(Predictions) / (1 + exp(Predictions))
+Predictions_Adopt <- Model_Matrix %*% Coefs_Adopt
+Predictions_Adopt <- exp(Predictions_Adopt) / (1 + exp(Predictions_Adopt))
 
 # compile predictions and write to csv
-Compiled_Predictions <- as_tibble(cbind(Predictions_Data, Property_Predictions))
-write.csv(Compiled_Predictions, file="output/predictions/adoption_predictions.csv", row.names = FALSE)
+Compiled_Predictions_Adopt <- as_tibble(cbind(Predictions_Data, Predictions_Adopt))
+write.csv(Compiled_Predictions_Adopt, file="output/predictions/adoption_predictions.csv", row.names = FALSE)
+
+# generate predictions for cost per hectare per year given will consider adoption
+Model_Matrix <- model.matrix(~ ha + LValHa + MosType, data = Predictions_Data)
+Predictions_WTA <- Model_Matrix %*% Coefs_WTA
+
+# compile predictions and write to csv
+Compiled_Predictions_WTA <- as_tibble(cbind(Predictions_Data, Predictions_WTA))
+write.csv(Compiled_Predictions_WTA, file="output/predictions/wta_predictions.csv", row.names = FALSE)
