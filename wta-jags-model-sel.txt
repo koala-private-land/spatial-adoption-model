@@ -70,6 +70,13 @@ model {
   }
 
   # Priors
+  # uses the approach of Ray-Bing Chen, Chi-Hsiang Chu, Shinsheng Yuan & Ying Nian Wu (2016)
+  # Bayesian Sparse Group Selection, Journal of Computational and Graphical Statistics, 25:3,
+  # 665-683 for setting priors for variable selection
+
+  # priors for variable inclusion
+  p_g <- 0.5
+  p_gl <- 0.5
 
   # individual property level
 
@@ -77,20 +84,57 @@ model {
   tau <- sig^-2
   sig ~ dlnorm(0, 0.001)
   phi ~ dlnorm(0, 0.001)
+
   # coefficients
-  for (i in 1:Nx)
-  {
-  	beta_x[i] ~ dnorm(0, 0.001)
-  }
-  for (i in 1:Ny)
-  {
-  	beta_y[i] ~ dnorm(0, 0.001)
-  }
-  for (i in 1:Nz)
-  {
-  	beta_z[i] ~ dnorm(0, 0.001)
+
+  for (i in 1:2) {
+    eta_g_temp_x[i] ~ dbern(p_g)
+    eta_g_temp_y[i] ~ dbern(p_g)
+    eta_g_temp_z[i] ~ dbern(p_g)
   }
 
+  # factor (categorical) variables
+  for (i in 1:NxF) {
+    eta_g_x[i] <- eta_g_temp_x[FVARX[i]]
+    ind_gl_x[i] ~ dbern(p_gl)
+    gamma_gl_x[i] <- (1 - eta_g_x[i]) * 0 + (eta_g_x[i] * ind_gl_x[i])
+    b_x[i] ~ dnorm(0, 0.1) # tau fixed but could tune using cross-validation or set inverse-gamma hyperparameter (see Chen et al. 2016)
+    beta_x[i] <- (1 - (eta_g_x[i] * gamma_gl_x[i])) * 0 + (eta_g_x[i] * gamma_gl_x[i] * b_x[i])
+  }
+  # continuous variables
+  for (i in (NxF + 1):Nx) {
+    eta_g_x[i] ~ dbern(p_g)
+    b_x[i] ~ dnorm(0, 0.1) # tau fixed but could tune using cross-validation or set inverse-gamma hyperparameter (see Chen et al. 2016)
+    beta_x[i] <- (1 - eta_g_x[i]) * 0 + (eta_g_x[i] * b_x[i])
+  }
+  # factor (categorical) variables
+  for (i in 1:NyF) {
+    eta_g_y[i] <- eta_g_temp_y[FVARY[i]]
+    ind_gl_y[i] ~ dbern(p_gl)
+    gamma_gl_y[i] <- (1 - eta_g_y[i]) * 0 + (eta_g_y[i] * ind_gl_y[i])
+    b_y[i] ~ dnorm(0, 0.1) # tau fixed but could tune using cross-validation or set inverse-gamma hyperparameter (see Chen et al. 2016)
+    beta_y[i] <- (1 - (eta_g_y[i] * gamma_gl_y[i])) * 0 + (eta_g_y[i] * gamma_gl_y[i] * b_y[i])
+  }
+  # continuous variables
+  for (i in (NyF + 1):Ny) {
+    eta_g_y[i] ~ dbern(p_g)
+    b_y[i] ~ dnorm(0, 0.1) # tau fixed but could tune using cross-validation or set inverse-gamma hyperparameter (see Chen et al. 2016)
+    beta_y[i] <- (1 - eta_g_y[i]) * 0 + (eta_g_y[i] * b_y[i])
+  }
+  # factor (categorical) variables
+  for (i in 1:NzF) {
+    eta_g_z[i] <- eta_g_temp_z[FVARZ[i]]
+    ind_gl_z[i] ~ dbern(p_gl)
+    gamma_gl_z[i] <- (1 - eta_g_z[i]) * 0 + (eta_g_z[i] * ind_gl_z[i])
+    b_z[i] ~ dnorm(0, 0.1) # tau fixed but could tune using cross-validation or set inverse-gamma hyperparameter (see Chen et al. 2016)
+    beta_z[i] <- (1 - (eta_g_z[i] * gamma_gl_z[i])) * 0 + (eta_g_z[i] * gamma_gl_z[i] * b_z[i])
+  }
+  # continuous variables
+  for (i in (NzF + 1):Nz) {
+    eta_g_z[i] ~ dbern(p_g)
+    b_z[i] ~ dnorm(0, 0.1) # tau fixed but could tune using cross-validation or set inverse-gamma hyperparameter (see Chen et al. 2016)
+    beta_z[i] <- (1 - eta_g_z[i]) * 0 + (eta_g_z[i] * b_z[i])
+  }
 
   # SA1 level
 
@@ -101,18 +145,31 @@ model {
   #sigry ~ dlnorm(0, 0.001)
   #taurz <- sigrz^-2
   #sigrz ~ dlnorm(0, 0.001)
-  # coefficients
-  for (i in 1:NxR)
-  {
-    betar_x[i] ~ dnorm(0, 0.001)
+
+  # coefficients - currently assumes continuous variables only
+  etar_g_x[1] <- 1
+  br_x[1] ~ dnorm(0, 0.1)
+  betar_x[1] <- br_x[1]
+  for (i in 2:NxR) {
+    etar_g_x[i] ~ dbern(p_g)
+    br_x[i] ~ dnorm(0, 0.1) # tau fixed but could tune using cross-validation or set inverse-gamma hyperparameter (see Chen et al. 2016)
+    betar_x[i] <- (1 - etar_g_x[i]) * 0 + etar_g_x[i] * br_x[i]
   }
-  for (i in 1:NyR)
-  {
-    betar_y[i] ~ dnorm(0, 0.001)
+  etar_g_y[1] <- 1
+  br_y[1] ~ dnorm(0, 0.1)
+  betar_y[1] <- br_y[1]
+  for (i in 2:NyR) {
+    etar_g_y[i] ~ dbern(p_g)
+    br_y[i] ~ dnorm(0, 0.1) # tau fixed but could tune using cross-validation or set inverse-gamma hyperparameter (see Chen et al. 2016)
+    betar_y[i] <- (1 - etar_g_y[i]) * 0 + etar_g_y[i] * br_y[i]
   }
-  for (i in 1:NzR)
-  {
-    betar_z[i] ~ dnorm(0, 0.001)
+  etar_g_z[1] <- 1
+  br_z[1] ~ dnorm(0, 0.1)
+  betar_z[1] <- br_z[1]
+  for (i in 2:NzR) {
+    etar_g_z[i] ~ dbern(p_g)
+    br_z[i] ~ dnorm(0, 0.1) # tau fixed but could tune using cross-validation or set inverse-gamma hyperparameter (see Chen et al. 2016)
+    betar_z[i] <- (1 - etar_g_z[i]) * 0 + etar_g_z[i] * br_z[i]
   }
 
   # missing land value data
